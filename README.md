@@ -227,7 +227,9 @@ MediaPipe is CPU-side. Unchanged logos are converted once per call.
 
 ## Troubleshooting
 
-- **Model not found:** run `scripts/download_face_landmarker.py`, restart ComfyUI
+- **Model not found:** download the three files into `ComfyUI/models/gits_tracking/`
+  (see [Models](#models-explicit-download-only)), or run
+  `scripts/download_face_landmarker.py`, then restart ComfyUI
 - **MediaPipe import error:** install `requirements.txt` into ComfyUI’s Python
 - **Logo inverted:** Simple/Webcam default `comfy_load_image` fixes core Load Image masks; Advanced may need `InvertMask`
 - **Track loss:** try `aggressive_track`, lower `tracker_confidence`, raise `hold_frames`, keep `small_face_boost` / `fuse_detectors` on
