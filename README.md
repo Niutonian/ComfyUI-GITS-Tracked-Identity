@@ -66,16 +66,79 @@ needs **ComfyUI-RMBG** (or an equivalent Big-LaMa provider) loaded in ComfyUI.
 
 ### Models (explicit download only)
 
-Nodes never download weights at queue time:
+Nodes **never** download weights at queue time. Install models once, then restart
+ComfyUI. Search the node menu for `GITS`.
+
+#### Where to place them
+
+Create this folder if it does not exist:
+
+```text
+ComfyUI/models/gits_tracking/
+```
+
+Expected files (exact names):
+
+| File | Purpose | Approx. size |
+|------|---------|-------------:|
+| `face_landmarker.task` | MediaPipe face landmarks (primary tracker) | ~3.6 MB |
+| `face_detection_yunet_2023mar.onnx` | OpenCV YuNet fallback (small / hard faces) | ~0.2 MB |
+| `big-lama.pt` | Big-LaMa face removal / inpaint | ~196 MB |
+
+Full example on a typical Windows Easy-Install layout:
+
+```text
+ComfyUI/
+  models/
+    gits_tracking/
+      face_landmarker.task
+      face_detection_yunet_2023mar.onnx
+      big-lama.pt
+  custom_nodes/
+    ComfyUI-GITS-Tracked-Identity/
+```
+
+If you already have Big-LaMa from **ComfyUI-RMBG** at
+`ComfyUI/models/RMBG/Lama/big-lama.pt`, you can copy that file into
+`gits_tracking/` instead of downloading it again. GITS prefers
+`models/gits_tracking/big-lama.pt` and can fall back to the RMBG path when
+configured through the LaMa remover node.
+
+#### Manual download URLs
+
+Download each file in a browser (or with `curl` / `wget`) and save it into
+`ComfyUI/models/gits_tracking/` with the exact filename above:
+
+1. **Face Landmarker** → save as `face_landmarker.task`  
+   https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task
+
+2. **YuNet face detector** → save as `face_detection_yunet_2023mar.onnx`  
+   https://github.com/opencv/opencv_zoo/raw/main/models/face_detection_yunet/face_detection_yunet_2023mar.onnx
+
+3. **Big-LaMa** → save as `big-lama.pt`  
+   https://huggingface.co/1038lab/Lama/resolve/main/big-lama.pt  
+   (model card / files page: https://huggingface.co/1038lab/Lama)
+
+PowerShell example:
+
+```powershell
+$dest = "C:\path\to\ComfyUI\models\gits_tracking"
+New-Item -ItemType Directory -Force -Path $dest | Out-Null
+Invoke-WebRequest -Uri "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task" -OutFile "$dest\face_landmarker.task"
+Invoke-WebRequest -Uri "https://github.com/opencv/opencv_zoo/raw/main/models/face_detection_yunet/face_detection_yunet_2023mar.onnx" -OutFile "$dest\face_detection_yunet_2023mar.onnx"
+Invoke-WebRequest -Uri "https://huggingface.co/1038lab/Lama/resolve/main/big-lama.pt" -OutFile "$dest\big-lama.pt"
+```
+
+#### Automatic installer script
+
+From the custom node folder (after it is inside `custom_nodes`, the script
+writes into `ComfyUI/models/gits_tracking/`):
 
 ```powershell
 python scripts\download_face_landmarker.py
 ```
 
-Destination: `ComfyUI/models/gits_tracking/`  
-(`face_landmarker.task`, `face_detection_yunet_2023mar.onnx`, `big-lama.pt`)
-
-Restart ComfyUI. Search the node menu for `GITS`.
+Use `--skip-lama` to install only the two face-detection models.
 
 ### Optional: sync from a development checkout
 
