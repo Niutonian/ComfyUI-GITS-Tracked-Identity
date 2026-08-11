@@ -1,0 +1,1454 @@
+{
+  "id": "a6de2cdf-4e71-4e01-ad23-30059751bd94",
+  "revision": 0,
+  "last_node_id": 30,
+  "last_link_id": 37,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "LoadImage",
+      "pos": [
+        -849.620658269981,
+        -1277.2673172776517
+      ],
+      "size": [
+        315,
+        339.328125
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "slot_index": 0,
+          "links": [
+            20
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "slot_index": 1,
+          "links": null
+        }
+      ],
+      "title": "1. Source image or frame batch",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.27.0",
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "23746770-Portrait-of-happy-saleswoman-holding-digital-tablet-and-fruits-basket-in-grocery-store-Stock-Photo.jpg",
+        "image"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "LoadImage",
+      "pos": [
+        -849.620658269981,
+        -897.2673172776517
+      ],
+      "size": [
+        315,
+        339.328125
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "slot_index": 0,
+          "links": [
+            2
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "slot_index": 1,
+          "links": [
+            3
+          ]
+        }
+      ],
+      "title": "2. Static center artwork",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.27.0",
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "gits_placeholder_static.png",
+        "image"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "LoadImage",
+      "pos": [
+        -849.620658269981,
+        -527.2673172776517
+      ],
+      "size": [
+        315,
+        339.328125
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "slot_index": 0,
+          "links": [
+            4
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "slot_index": 1,
+          "links": [
+            5
+          ]
+        }
+      ],
+      "title": "3. Independently rotating ring",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.27.0",
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "gits_placeholder_ring.png",
+        "image"
+      ]
+    },
+    {
+      "id": 4,
+      "type": "InvertMask",
+      "pos": [
+        -460.0691514230359,
+        -785.5228170648193
+      ],
+      "size": [
+        227.25,
+        60
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "mask",
+          "type": "MASK",
+          "link": 3
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "slot_index": 0,
+          "links": [
+            6
+          ]
+        }
+      ],
+      "title": "Required: restore PNG alpha",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.27.0",
+        "Node name for S&R": "InvertMask"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 5,
+      "type": "InvertMask",
+      "pos": [
+        -459.62065826998105,
+        -387.2673172776517
+      ],
+      "size": [
+        227.25,
+        60
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "mask",
+          "type": "MASK",
+          "link": 5
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "slot_index": 0,
+          "links": [
+            7
+          ]
+        }
+      ],
+      "title": "Required: restore PNG alpha",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.27.0",
+        "Node name for S&R": "InvertMask"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 6,
+      "type": "GITSTrackAndGuide",
+      "pos": [
+        -117.07198822413227,
+        -1286.8888231234582
+      ],
+      "size": [
+        370,
+        900
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 26
+        },
+        {
+          "name": "static_logo",
+          "type": "IMAGE",
+          "link": 2
+        },
+        {
+          "name": "static_logo_mask",
+          "type": "MASK",
+          "link": 6
+        },
+        {
+          "name": "ring_logo",
+          "type": "IMAGE",
+          "link": 4
+        },
+        {
+          "name": "ring_logo_mask",
+          "type": "MASK",
+          "link": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "final_images",
+          "type": "IMAGE",
+          "slot_index": 0,
+          "links": [
+            36
+          ]
+        },
+        {
+          "name": "removed_background_images",
+          "type": "IMAGE",
+          "slot_index": 1,
+          "links": null
+        },
+        {
+          "name": "guide_images",
+          "type": "IMAGE",
+          "slot_index": 2,
+          "links": [
+            8,
+            14,
+            27
+          ]
+        },
+        {
+          "name": "aligned_overlay_images",
+          "type": "IMAGE",
+          "slot_index": 3,
+          "links": [
+            9,
+            15,
+            33
+          ]
+        },
+        {
+          "name": "overlay_masks",
+          "type": "MASK",
+          "slot_index": 4,
+          "links": [
+            10,
+            16,
+            34
+          ]
+        },
+        {
+          "name": "tracking_preview",
+          "type": "IMAGE",
+          "slot_index": 5,
+          "links": [
+            22
+          ]
+        },
+        {
+          "name": "tracking_json",
+          "type": "STRING",
+          "slot_index": 6,
+          "links": null
+        },
+        {
+          "name": "face_occlusion_masks",
+          "type": "MASK",
+          "slot_index": 7,
+          "links": [
+            25,
+            28,
+            30,
+            35
+          ]
+        }
+      ],
+      "title": "4. GITS Face Tracking + Removal (Advanced)",
+      "properties": {
+        "Node name for S&R": "GITSTrackAndGuide"
+      },
+      "widgets_values": [
+        24,
+        2,
+        -0.04,
+        35,
+        0.15,
+        1.2,
+        0.035,
+        8,
+        8,
+        0.45,
+        0,
+        0,
+        1,
+        "yunet",
+        1,
+        16,
+        1,
+        "lama",
+        230,
+        8,
+        1.0,
+        "locked_face",
+        4,
+        true,
+        "384",
+        2,
+        true
+      ]
+    },
+    {
+      "id": 7,
+      "type": "PreviewImage",
+      "pos": [
+        210,
+        -94.66299295764446
+      ],
+      "size": [
+        315,
+        3399.5
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 4,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 8
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "title": "Guide: overlay before diffusion",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.27.0",
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 8,
+      "type": "PreviewImage",
+      "pos": [
+        569.8490509229676,
+        -94.66299295764446
+      ],
+      "size": [
+        316.0625,
+        4426.03125
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 4,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 9
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "title": "Aligned RGB overlay (black outside mask)",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.27.0",
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 9,
+      "type": "MaskToImage",
+      "pos": [
+        916.628686921846,
+        -202.81196255486714
+      ],
+      "size": [
+        263.71875,
+        47.328125
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 4,
+      "inputs": [
+        {
+          "name": "mask",
+          "type": "MASK",
+          "link": 10
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "slot_index": 0,
+          "links": [
+            11
+          ]
+        }
+      ],
+      "title": "Convert tracked mask for preview",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.27.0",
+        "Node name for S&R": "MaskToImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 10,
+      "type": "PreviewImage",
+      "pos": [
+        926.212499369681,
+        -94.66299295764446
+      ],
+      "size": [
+        315,
+        4410.1875
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 4,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 11
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "title": "Tracked alpha mask",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.27.0",
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 11,
+      "type": "GITSCompositeOverlay",
+      "pos": [
+        358.71844818001796,
+        -1645.2942346427733
+      ],
+      "size": [
+        337.6875,
+        303.328125
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "stylized_images",
+          "type": "IMAGE",
+          "link": 14
+        },
+        {
+          "name": "aligned_overlay_images",
+          "type": "IMAGE",
+          "link": 15
+        },
+        {
+          "name": "overlay_masks",
+          "type": "MASK",
+          "link": 16
+        },
+        {
+          "name": "face_occlusion_masks",
+          "shape": 7,
+          "type": "MASK",
+          "link": 28
+        }
+      ],
+      "outputs": [
+        {
+          "name": "final_images",
+          "type": "IMAGE",
+          "slot_index": 0,
+          "links": [
+            17,
+            29
+          ]
+        },
+        {
+          "name": "final_masks",
+          "type": "MASK",
+          "slot_index": 1,
+          "links": null
+        }
+      ],
+      "title": "5. GITS Final Artwork Overlay",
+      "properties": {
+        "Node name for S&R": "GITSCompositeOverlay"
+      },
+      "widgets_values": [
+        1.0,
+        0,
+        0,
+        0,
+        463389
+      ]
+    },
+    {
+      "id": 12,
+      "type": "PreviewImage",
+      "pos": [
+        2639.0445151528443,
+        -55.62975206861296
+      ],
+      "size": [
+        315,
+        3363.5625
+      ],
+      "flags": {},
+      "order": 18,
+      "mode": 4,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 17
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "title": "Final output",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.27.0",
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 13,
+      "type": "VHS_LoadVideo",
+      "pos": [
+        -1161.519917404733,
+        -1408.3662517005453
+      ],
+      "size": [
+        255.8125,
+        560.3131634819533
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "meta_batch",
+          "shape": 7,
+          "type": "VHS_BatchManager",
+          "link": null
+        },
+        {
+          "name": "vae",
+          "shape": 7,
+          "type": "VAE",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            26,
+            31
+          ]
+        },
+        {
+          "name": "frame_count",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "name": "video_info",
+          "type": "VHS_VIDEOINFO",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-videohelpersuite",
+        "ver": "4ee72c065db22c9d96c2427954dc69e7b908444b",
+        "Node name for S&R": "VHS_LoadVideo"
+      },
+      "widgets_values": {
+        "video": "a_woman_walking_toward_camera__Image__1_Attachment_seed4763948704482529661.mp4",
+        "force_rate": 0,
+        "custom_width": 0,
+        "custom_height": 0,
+        "frame_load_cap": 0,
+        "skip_first_frames": 0,
+        "select_every_nth": 1,
+        "format": "AnimateDiff",
+        "videopreview": {
+          "hidden": false,
+          "paused": false,
+          "params": {
+            "filename": "a_woman_walking_toward_camera__Image__1_Attachment_seed4763948704482529661.mp4",
+            "type": "input",
+            "format": "video/mp4",
+            "force_rate": 0,
+            "custom_width": 0,
+            "custom_height": 0,
+            "frame_load_cap": 0,
+            "skip_first_frames": 0,
+            "select_every_nth": 1
+          }
+        }
+      }
+    },
+    {
+      "id": 14,
+      "type": "VHS_DuplicateImages",
+      "pos": [
+        -477.5242251462163,
+        -1283.155756378165
+      ],
+      "size": [
+        225,
+        123.328125
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 20
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": []
+        },
+        {
+          "name": "count",
+          "type": "INT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-videohelpersuite",
+        "ver": "4ee72c065db22c9d96c2427954dc69e7b908444b",
+        "Node name for S&R": "VHS_DuplicateImages"
+      },
+      "widgets_values": {
+        "multiply_by": 121
+      }
+    },
+    {
+      "id": 15,
+      "type": "PreviewImage",
+      "pos": [
+        1293.591330885827,
+        -80.79026132379556
+      ],
+      "size": [
+        315,
+        4410.1875
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 4,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 22
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "title": "Guide: overlay before diffusion",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.27.0",
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 16,
+      "type": "MaskToImage",
+      "pos": [
+        1642.809408027178,
+        -180.54696171409296
+      ],
+      "size": [
+        263.71875,
+        47.328125
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 4,
+      "inputs": [
+        {
+          "name": "mask",
+          "type": "MASK",
+          "link": 25
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "slot_index": 0,
+          "links": [
+            24
+          ]
+        }
+      ],
+      "title": "Convert tracked mask for preview",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.27.0",
+        "Node name for S&R": "MaskToImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 17,
+      "type": "PreviewImage",
+      "pos": [
+        1652.393220475013,
+        -72.39799211687028
+      ],
+      "size": [
+        315,
+        4410.1875
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 4,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 24
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "title": "Tracked alpha mask",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.27.0",
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 20,
+      "type": "VHS_VideoCombine",
+      "pos": [
+        356.7448517450534,
+        -1277.8256073770679
+      ],
+      "size": [
+        225,
+        553
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 27
+        },
+        {
+          "name": "audio",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": null
+        },
+        {
+          "name": "meta_batch",
+          "shape": 7,
+          "type": "VHS_BatchManager",
+          "link": null
+        },
+        {
+          "name": "vae",
+          "shape": 7,
+          "type": "VAE",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "Filenames",
+          "type": "VHS_FILENAMES",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-videohelpersuite",
+        "ver": "4ee72c065db22c9d96c2427954dc69e7b908444b",
+        "Node name for S&R": "VHS_VideoCombine"
+      },
+      "widgets_values": {
+        "frame_rate": 8,
+        "loop_count": 0,
+        "filename_prefix": "gits/gits",
+        "format": "video/h264-mp4",
+        "pix_fmt": "yuv420p",
+        "crf": 19,
+        "save_metadata": true,
+        "trim_to_audio": false,
+        "pingpong": false,
+        "save_output": true,
+        "videopreview": {
+          "hidden": false,
+          "paused": false,
+          "params": {
+            "filename": "gits_00026.mp4",
+            "subfolder": "gits",
+            "type": "output",
+            "format": "video/h264-mp4",
+            "frame_rate": 8,
+            "workflow": "gits_00026.png",
+            "fullpath": "C:\\Users\\secti\\Desktop\\COMFYUI\\ComfyUI-Easy-Install\\ComfyUI\\output\\gits\\gits_00026.mp4"
+          }
+        }
+      }
+    },
+    {
+      "id": 21,
+      "type": "VHS_VideoCombine",
+      "pos": [
+        634.4290297087579,
+        -1280.8277131073737
+      ],
+      "size": [
+        225,
+        553
+      ],
+      "flags": {},
+      "order": 19,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 29
+        },
+        {
+          "name": "audio",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": null
+        },
+        {
+          "name": "meta_batch",
+          "shape": 7,
+          "type": "VHS_BatchManager",
+          "link": null
+        },
+        {
+          "name": "vae",
+          "shape": 7,
+          "type": "VAE",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "Filenames",
+          "type": "VHS_FILENAMES",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-videohelpersuite",
+        "ver": "4ee72c065db22c9d96c2427954dc69e7b908444b",
+        "Node name for S&R": "VHS_VideoCombine"
+      },
+      "widgets_values": {
+        "frame_rate": 8,
+        "loop_count": 0,
+        "filename_prefix": "gits/gits",
+        "format": "video/h264-mp4",
+        "pix_fmt": "yuv420p",
+        "crf": 19,
+        "save_metadata": true,
+        "trim_to_audio": false,
+        "pingpong": false,
+        "save_output": true,
+        "videopreview": {
+          "hidden": false,
+          "paused": false,
+          "params": {
+            "filename": "gits_00027.mp4",
+            "subfolder": "gits",
+            "type": "output",
+            "format": "video/h264-mp4",
+            "frame_rate": 8,
+            "workflow": "gits_00027.png",
+            "fullpath": "C:\\Users\\secti\\Desktop\\COMFYUI\\ComfyUI-Easy-Install\\ComfyUI\\output\\gits\\gits_00027.mp4"
+          }
+        }
+      }
+    },
+    {
+      "id": 24,
+      "type": "AILab_LamaRemover",
+      "pos": [
+        106.59208257534056,
+        -475.8552158098246
+      ],
+      "size": [
+        300,
+        160.65625
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 31
+        },
+        {
+          "name": "masks",
+          "type": "MASK",
+          "link": 30
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": [
+            37
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-rmbg",
+        "ver": "d7402513f23f58db7d56754b02a4f51a148b4941",
+        "Node name for S&R": "AILab_LamaRemover"
+      },
+      "widgets_values": [
+        230,
+        8
+      ],
+      "color": "#2e3e57",
+      "bgcolor": "#4b5b73"
+    },
+    {
+      "id": 26,
+      "type": "GITSCompositeOverlay",
+      "pos": [
+        827.1472541738701,
+        -1668.662711586515
+      ],
+      "size": [
+        337.6875,
+        303.328125
+      ],
+      "flags": {},
+      "order": 20,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "stylized_images",
+          "type": "IMAGE",
+          "link": 37
+        },
+        {
+          "name": "aligned_overlay_images",
+          "type": "IMAGE",
+          "link": 33
+        },
+        {
+          "name": "overlay_masks",
+          "type": "MASK",
+          "link": 34
+        },
+        {
+          "name": "face_occlusion_masks",
+          "shape": 7,
+          "type": "MASK",
+          "link": 35
+        }
+      ],
+      "outputs": [
+        {
+          "name": "final_images",
+          "type": "IMAGE",
+          "slot_index": 0,
+          "links": null
+        },
+        {
+          "name": "final_masks",
+          "type": "MASK",
+          "slot_index": 1,
+          "links": null
+        }
+      ],
+      "title": "5. GITS Final Artwork Overlay",
+      "properties": {
+        "Node name for S&R": "GITSCompositeOverlay"
+      },
+      "widgets_values": [
+        1.0,
+        0,
+        0,
+        0,
+        463389
+      ]
+    },
+    {
+      "id": 27,
+      "type": "VHS_VideoCombine",
+      "pos": [
+        932.3931713393977,
+        -1275.4152740232064
+      ],
+      "size": [
+        225,
+        553
+      ],
+      "flags": {},
+      "order": 21,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 36
+        },
+        {
+          "name": "audio",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": null
+        },
+        {
+          "name": "meta_batch",
+          "shape": 7,
+          "type": "VHS_BatchManager",
+          "link": null
+        },
+        {
+          "name": "vae",
+          "shape": 7,
+          "type": "VAE",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "Filenames",
+          "type": "VHS_FILENAMES",
+          "links": null
+        }
+      ],
+      "title": "Integrated GITS final output",
+      "properties": {
+        "cnr_id": "comfyui-videohelpersuite",
+        "ver": "4ee72c065db22c9d96c2427954dc69e7b908444b",
+        "Node name for S&R": "VHS_VideoCombine"
+      },
+      "widgets_values": {
+        "frame_rate": 8,
+        "loop_count": 0,
+        "filename_prefix": "gits/gits",
+        "format": "video/h264-mp4",
+        "pix_fmt": "yuv420p",
+        "crf": 19,
+        "save_metadata": true,
+        "trim_to_audio": false,
+        "pingpong": false,
+        "save_output": true,
+        "videopreview": {
+          "hidden": false,
+          "paused": false,
+          "params": {
+            "filename": "gits_00028.mp4",
+            "subfolder": "gits",
+            "type": "output",
+            "format": "video/h264-mp4",
+            "frame_rate": 8,
+            "workflow": "gits_00028.png",
+            "fullpath": "C:\\Users\\secti\\Desktop\\COMFYUI\\ComfyUI-Easy-Install\\ComfyUI\\output\\gits\\gits_00028.mp4"
+          }
+        }
+      }
+    }
+  ],
+  "links": [
+    [
+      2,
+      2,
+      0,
+      6,
+      1,
+      "IMAGE"
+    ],
+    [
+      3,
+      2,
+      1,
+      4,
+      0,
+      "MASK"
+    ],
+    [
+      4,
+      3,
+      0,
+      6,
+      3,
+      "IMAGE"
+    ],
+    [
+      5,
+      3,
+      1,
+      5,
+      0,
+      "MASK"
+    ],
+    [
+      6,
+      4,
+      0,
+      6,
+      2,
+      "MASK"
+    ],
+    [
+      7,
+      5,
+      0,
+      6,
+      4,
+      "MASK"
+    ],
+    [
+      8,
+      6,
+      2,
+      7,
+      0,
+      "IMAGE"
+    ],
+    [
+      9,
+      6,
+      3,
+      8,
+      0,
+      "IMAGE"
+    ],
+    [
+      10,
+      6,
+      4,
+      9,
+      0,
+      "MASK"
+    ],
+    [
+      11,
+      9,
+      0,
+      10,
+      0,
+      "IMAGE"
+    ],
+    [
+      14,
+      6,
+      2,
+      11,
+      0,
+      "IMAGE"
+    ],
+    [
+      15,
+      6,
+      3,
+      11,
+      1,
+      "IMAGE"
+    ],
+    [
+      16,
+      6,
+      4,
+      11,
+      2,
+      "MASK"
+    ],
+    [
+      17,
+      11,
+      0,
+      12,
+      0,
+      "IMAGE"
+    ],
+    [
+      20,
+      1,
+      0,
+      14,
+      0,
+      "IMAGE"
+    ],
+    [
+      22,
+      6,
+      5,
+      15,
+      0,
+      "IMAGE"
+    ],
+    [
+      24,
+      16,
+      0,
+      17,
+      0,
+      "IMAGE"
+    ],
+    [
+      25,
+      6,
+      7,
+      16,
+      0,
+      "MASK"
+    ],
+    [
+      26,
+      13,
+      0,
+      6,
+      0,
+      "IMAGE"
+    ],
+    [
+      27,
+      6,
+      2,
+      20,
+      0,
+      "IMAGE"
+    ],
+    [
+      28,
+      6,
+      7,
+      11,
+      3,
+      "MASK"
+    ],
+    [
+      29,
+      11,
+      0,
+      21,
+      0,
+      "IMAGE"
+    ],
+    [
+      30,
+      6,
+      7,
+      24,
+      1,
+      "MASK"
+    ],
+    [
+      31,
+      13,
+      0,
+      24,
+      0,
+      "IMAGE"
+    ],
+    [
+      33,
+      6,
+      3,
+      26,
+      1,
+      "IMAGE"
+    ],
+    [
+      34,
+      6,
+      4,
+      26,
+      2,
+      "MASK"
+    ],
+    [
+      35,
+      6,
+      7,
+      26,
+      3,
+      "MASK"
+    ],
+    [
+      36,
+      6,
+      0,
+      27,
+      0,
+      "IMAGE"
+    ],
+    [
+      37,
+      24,
+      0,
+      26,
+      0,
+      "IMAGE"
+    ]
+  ],
+  "groups": [
+    {
+      "id": 1,
+      "title": "Integrated mode: LaMa removal and exact artwork are produced inside the advanced GITS node",
+      "bounding": [
+        2203.4827504236564,
+        -136.7548832769661,
+        850,
+        410
+      ],
+      "color": "#3f789e",
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.1,
+      "offset": [
+        14741.364580362322,
+        8724.961861980155
+      ]
+    },
+    "frontendVersion": "1.45.20",
+    "VHS_latentpreview": false,
+    "VHS_latentpreviewrate": 0,
+    "VHS_MetadataImage": true,
+    "VHS_KeepIntermediate": true
+  },
+  "version": 0.4
+}

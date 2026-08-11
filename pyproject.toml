@@ -1,0 +1,59 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "comfyui-gits-tracked-identity"
+version = "0.2.0"
+description = "Temporally tracked identity graphic overlays for ComfyUI (single image, video batch, webcam)"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10,<3.12"
+authors = [
+    { name = "GITS Tracked Identity contributors" },
+]
+keywords = [
+    "comfyui",
+    "face-tracking",
+    "mediapipe",
+    "lama",
+    "overlay",
+    "webcam",
+    "video",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Multimedia :: Graphics",
+    "Topic :: Multimedia :: Video",
+]
+dependencies = [
+    "mediapipe>=0.10.14,<0.11",
+    "numpy>=1.24,<2",
+    "Pillow>=10.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "torch",
+    "opencv-python-headless",
+]
+
+[project.urls]
+Homepage = "https://github.com/REPLACE_WITH_YOUR_USER/ComfyUI-GITS-Tracked-Identity"
+Repository = "https://github.com/REPLACE_WITH_YOUR_USER/ComfyUI-GITS-Tracked-Identity"
+Issues = "https://github.com/REPLACE_WITH_YOUR_USER/ComfyUI-GITS-Tracked-Identity/issues"
+Changelog = "https://github.com/REPLACE_WITH_YOUR_USER/ComfyUI-GITS-Tracked-Identity/blob/main/CHANGELOG.md"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.setuptools]
+packages = ["nodes"]
+
+[tool.setuptools.package-data]
+nodes = ["*.py"]

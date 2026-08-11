@@ -1,0 +1,113 @@
+{
+  "last_node_id": 6,
+  "last_link_id": 7,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "LoadImage",
+      "pos": [0, 0],
+      "size": [315, 314],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "outputs": [
+        {"name": "IMAGE", "type": "IMAGE", "links": [1], "slot_index": 0},
+        {"name": "MASK", "type": "MASK", "links": null, "slot_index": 1}
+      ],
+      "title": "Source image or frame batch",
+      "properties": {"Node name for S&R": "LoadImage"},
+      "widgets_values": ["input.png", "image"]
+    },
+    {
+      "id": 2,
+      "type": "LoadImage",
+      "pos": [0, 380],
+      "size": [315, 314],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "outputs": [
+        {"name": "IMAGE", "type": "IMAGE", "links": [2], "slot_index": 0},
+        {"name": "MASK", "type": "MASK", "links": [3], "slot_index": 1}
+      ],
+      "title": "Static artwork (direct PNG mask)",
+      "properties": {"Node name for S&R": "LoadImage"},
+      "widgets_values": ["gits_placeholder_static.png", "image"]
+    },
+    {
+      "id": 3,
+      "type": "LoadImage",
+      "pos": [0, 750],
+      "size": [315, 314],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "outputs": [
+        {"name": "IMAGE", "type": "IMAGE", "links": [4], "slot_index": 0},
+        {"name": "MASK", "type": "MASK", "links": [5], "slot_index": 1}
+      ],
+      "title": "Optional rotating ring (direct PNG mask)",
+      "properties": {"Node name for S&R": "LoadImage"},
+      "widgets_values": ["gits_placeholder_ring.png", "image"]
+    },
+    {
+      "id": 4,
+      "type": "GITSSimpleFaceReplacement",
+      "pos": [430, 260],
+      "size": [370, 560],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {"name": "images", "type": "IMAGE", "link": 1},
+        {"name": "static_logo", "type": "IMAGE", "link": 2},
+        {"name": "static_logo_mask", "type": "MASK", "link": 3},
+        {"name": "ring_logo", "type": "IMAGE", "link": 4},
+        {"name": "ring_logo_mask", "type": "MASK", "link": 5}
+      ],
+      "outputs": [
+        {"name": "final_images", "type": "IMAGE", "links": [6], "slot_index": 0},
+        {"name": "removed_background_images", "type": "IMAGE", "links": [7], "slot_index": 1}
+      ],
+      "properties": {"Node name for S&R": "GITSSimpleFaceReplacement"},
+      "widgets_values": [24.0, 1.1, -0.04, 35.0, "lama", 1.15, 230, 8, "comfy_load_image", "locked_face", 4, true, "384", 2, true]
+    },
+    {
+      "id": 5,
+      "type": "PreviewImage",
+      "pos": [900, 100],
+      "size": [315, 320],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [{"name": "images", "type": "IMAGE", "link": 6}],
+      "title": "Final images",
+      "properties": {"Node name for S&R": "PreviewImage"}
+    },
+    {
+      "id": 6,
+      "type": "PreviewImage",
+      "pos": [900, 500],
+      "size": [315, 320],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [{"name": "images", "type": "IMAGE", "link": 7}],
+      "title": "Removed background images",
+      "properties": {"Node name for S&R": "PreviewImage"}
+    }
+  ],
+  "links": [
+    [1, 1, 0, 4, 0, "IMAGE"],
+    [2, 2, 0, 4, 1, "IMAGE"],
+    [3, 2, 1, 4, 2, "MASK"],
+    [4, 3, 0, 4, 3, "IMAGE"],
+    [5, 3, 1, 4, 4, "MASK"],
+    [6, 4, 0, 5, 0, "IMAGE"],
+    [7, 4, 1, 6, 0, "IMAGE"]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {"ds": {"scale": 0.8, "offset": [100, 100]}},
+  "version": 0.4
+}

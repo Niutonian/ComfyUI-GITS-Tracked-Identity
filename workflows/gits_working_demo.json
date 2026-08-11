@@ -1,0 +1,237 @@
+{
+  "last_node_id": 13,
+  "last_link_id": 20,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "LoadImage",
+      "pos": [-920, -40],
+      "size": [315, 314],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "outputs": [
+        {"name": "IMAGE", "type": "IMAGE", "links": [1, 19], "shape": 3, "slot_index": 0},
+        {"name": "MASK", "type": "MASK", "links": null, "shape": 3, "slot_index": 1}
+      ],
+      "title": "1. Source image or frame batch",
+      "properties": {"Node name for S&R": "LoadImage"},
+      "widgets_values": ["OsdsdIP.webp", "image"]
+    },
+    {
+      "id": 2,
+      "type": "LoadImage",
+      "pos": [-920, 340],
+      "size": [315, 314],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "outputs": [
+        {"name": "IMAGE", "type": "IMAGE", "links": [2], "shape": 3, "slot_index": 0},
+        {"name": "MASK", "type": "MASK", "links": [3], "shape": 3, "slot_index": 1}
+      ],
+      "title": "2. Static center artwork",
+      "properties": {"Node name for S&R": "LoadImage"},
+      "widgets_values": ["gits_placeholder_static.png", "image"]
+    },
+    {
+      "id": 3,
+      "type": "LoadImage",
+      "pos": [-920, 710],
+      "size": [315, 314],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "outputs": [
+        {"name": "IMAGE", "type": "IMAGE", "links": [4], "shape": 3, "slot_index": 0},
+        {"name": "MASK", "type": "MASK", "links": [5], "shape": 3, "slot_index": 1}
+      ],
+      "title": "3. Independently rotating ring",
+      "properties": {"Node name for S&R": "LoadImage"},
+      "widgets_values": ["gits_placeholder_ring.png", "image"]
+    },
+    {
+      "id": 4,
+      "type": "InvertMask",
+      "pos": [-530, 480],
+      "size": [180, 60],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [{"name": "mask", "type": "MASK", "link": 3}],
+      "outputs": [{"name": "MASK", "type": "MASK", "links": [6], "shape": 3, "slot_index": 0}],
+      "title": "Required: restore PNG alpha",
+      "properties": {"Node name for S&R": "InvertMask"}
+    },
+    {
+      "id": 5,
+      "type": "InvertMask",
+      "pos": [-530, 850],
+      "size": [180, 60],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [{"name": "mask", "type": "MASK", "link": 5}],
+      "outputs": [{"name": "MASK", "type": "MASK", "links": [7], "shape": 3, "slot_index": 0}],
+      "title": "Required: restore PNG alpha",
+      "properties": {"Node name for S&R": "InvertMask"}
+    },
+    {
+      "id": 6,
+      "type": "GITSTrackAndGuide",
+      "pos": [-260, 130],
+      "size": [370, 620],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {"name": "images", "type": "IMAGE", "link": 1},
+        {"name": "static_logo", "type": "IMAGE", "link": 2},
+        {"name": "static_logo_mask", "type": "MASK", "link": 6},
+        {"name": "ring_logo", "type": "IMAGE", "link": 4},
+        {"name": "ring_logo_mask", "type": "MASK", "link": 7}
+      ],
+      "outputs": [
+        {"name": "final_images", "type": "IMAGE", "links": null, "shape": 3, "slot_index": 0},
+        {"name": "removed_background_images", "type": "IMAGE", "links": null, "shape": 3, "slot_index": 1},
+        {"name": "guide_images", "type": "IMAGE", "links": [8, 14], "shape": 3, "slot_index": 2},
+        {"name": "aligned_overlay_images", "type": "IMAGE", "links": [9, 15], "shape": 3, "slot_index": 3},
+        {"name": "overlay_masks", "type": "MASK", "links": [10, 16], "shape": 3, "slot_index": 4},
+        {"name": "tracking_preview", "type": "IMAGE", "links": null, "shape": 3, "slot_index": 5},
+        {"name": "tracking_json", "type": "STRING", "links": null, "shape": 3, "slot_index": 6},
+        {"name": "face_occlusion_masks", "type": "MASK", "links": [10, 18, 20], "shape": 3, "slot_index": 7}
+      ],
+      "title": "4. GITS Face Tracking + Removal (Advanced)",
+      "properties": {"Node name for S&R": "GITSTrackAndGuide"},
+      "widgets_values": [24.0, 1.1, -0.04, 35.0, 0.15, 1.2, 0.035, 8, 8, 0.45, 0, 0.0, 1.0, "yunet", 1.15, 8, 1.0]
+    },
+    {
+      "id": 7,
+      "type": "PreviewImage",
+      "pos": [210, -80],
+      "size": [315, 320],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [{"name": "images", "type": "IMAGE", "link": 8}],
+      "title": "Guide: overlay before diffusion",
+      "properties": {"Node name for S&R": "PreviewImage"}
+    },
+    {
+      "id": 8,
+      "type": "PreviewImage",
+      "pos": [570, -80],
+      "size": [315, 320],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [{"name": "images", "type": "IMAGE", "link": 9}],
+      "title": "Aligned RGB overlay (black outside mask)",
+      "properties": {"Node name for S&R": "PreviewImage"}
+    },
+    {
+      "id": 9,
+      "type": "MaskToImage",
+      "pos": [210, 300],
+      "size": [210, 60],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [{"name": "mask", "type": "MASK", "link": 10}],
+      "outputs": [{"name": "IMAGE", "type": "IMAGE", "links": [11], "shape": 3, "slot_index": 0}],
+      "title": "Convert tracked mask for preview",
+      "properties": {"Node name for S&R": "MaskToImage"}
+    },
+    {
+      "id": 10,
+      "type": "PreviewImage",
+      "pos": [570, 300],
+      "size": [315, 320],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [{"name": "images", "type": "IMAGE", "link": 11}],
+      "title": "Full face occlusion / inpaint mask",
+      "properties": {"Node name for S&R": "PreviewImage"}
+    },
+    {
+      "id": 11,
+      "type": "GITSCompositeOverlay",
+      "pos": [210, 700],
+      "size": [350, 220],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {"name": "stylized_images", "type": "IMAGE", "link": 14},
+        {"name": "aligned_overlay_images", "type": "IMAGE", "link": 15},
+        {"name": "overlay_masks", "type": "MASK", "link": 16},
+        {"name": "face_occlusion_masks", "type": "MASK", "link": 18}
+      ],
+      "outputs": [
+        {"name": "final_images", "type": "IMAGE", "links": [17], "shape": 3, "slot_index": 0},
+        {"name": "final_masks", "type": "MASK", "links": null, "shape": 3, "slot_index": 1}
+      ],
+      "title": "6. GITS Final Artwork Overlay",
+      "properties": {"Node name for S&R": "GITSCompositeOverlay"},
+      "widgets_values": [1.0, 0, 0, 0.0, 463389]
+    },
+    {
+      "id": 12,
+      "type": "PreviewImage",
+      "pos": [650, 700],
+      "size": [315, 320],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [{"name": "images", "type": "IMAGE", "link": 17}],
+      "title": "Final output",
+      "properties": {"Node name for S&R": "PreviewImage"}
+    },
+    {
+      "id": 13,
+      "type": "AILab_LamaRemover",
+      "pos": [150, 680],
+      "size": [340, 150],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {"name": "images", "type": "IMAGE", "link": 19},
+        {"name": "masks", "type": "MASK", "link": 20}
+      ],
+      "outputs": [
+        {"name": "images", "type": "IMAGE", "links": [14], "shape": 3, "slot_index": 0}
+      ],
+      "title": "5. Remove face/background-fill with LaMa",
+      "properties": {"Node name for S&R": "AILab_LamaRemover"},
+      "widgets_values": [230, 8]
+    }
+  ],
+  "links": [
+    [1, 1, 0, 6, 0, "IMAGE"],
+    [2, 2, 0, 6, 1, "IMAGE"],
+    [3, 2, 1, 4, 0, "MASK"],
+    [4, 3, 0, 6, 3, "IMAGE"],
+    [5, 3, 1, 5, 0, "MASK"],
+    [6, 4, 0, 6, 2, "MASK"],
+    [7, 5, 0, 6, 4, "MASK"],
+    [8, 6, 2, 7, 0, "IMAGE"],
+    [9, 6, 3, 8, 0, "IMAGE"],
+    [10, 6, 7, 9, 0, "MASK"],
+    [11, 9, 0, 10, 0, "IMAGE"],
+    [14, 13, 0, 11, 0, "IMAGE"],
+    [15, 6, 3, 11, 1, "IMAGE"],
+    [16, 6, 4, 11, 2, "MASK"],
+    [17, 11, 0, 12, 0, "IMAGE"],
+    [18, 6, 7, 11, 3, "MASK"],
+    [19, 1, 0, 13, 0, "IMAGE"],
+    [20, 6, 7, 13, 1, "MASK"]
+  ],
+  "groups": [
+    {"title": "Face removal branch: tracked full-face mask -> LaMa fill -> exact post-process artwork", "bounding": [100, 630, 930, 450], "color": "#3f789e", "font_size": 22, "flags": {}}
+  ],
+  "config": {},
+  "extra": {"ds": {"scale": 0.75, "offset": [980, 120]}},
+  "version": 0.4
+}
