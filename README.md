@@ -43,7 +43,7 @@ Reference environment: **Python 3.10 or 3.11**.
 
 ```powershell
 cd ComfyUI\custom_nodes
-git clone https://github.com/REPLACE_WITH_YOUR_USER/ComfyUI-GITS-Tracked-Identity.git
+git clone https://github.com/Niutonian/ComfyUI-GITS-Tracked-Identity.git
 cd ComfyUI-GITS-Tracked-Identity
 ```
 

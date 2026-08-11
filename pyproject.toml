@@ -44,10 +44,10 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/REPLACE_WITH_YOUR_USER/ComfyUI-GITS-Tracked-Identity"
-Repository = "https://github.com/REPLACE_WITH_YOUR_USER/ComfyUI-GITS-Tracked-Identity"
-Issues = "https://github.com/REPLACE_WITH_YOUR_USER/ComfyUI-GITS-Tracked-Identity/issues"
-Changelog = "https://github.com/REPLACE_WITH_YOUR_USER/ComfyUI-GITS-Tracked-Identity/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/Niutonian/ComfyUI-GITS-Tracked-Identity"
+Repository = "https://github.com/Niutonian/ComfyUI-GITS-Tracked-Identity"
+Issues = "https://github.com/Niutonian/ComfyUI-GITS-Tracked-Identity/issues"
+Changelog = "https://github.com/Niutonian/ComfyUI-GITS-Tracked-Identity/blob/main/CHANGELOG.md"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
