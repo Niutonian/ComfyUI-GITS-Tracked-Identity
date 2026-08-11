@@ -50,4 +50,35 @@ def test_face_region_mask_is_full_and_clips():
     assert mask.sum() > 100
 
 
+def test_profile_mask_covers_more_than_frontal():
+    """Side shots must expand the LaMa region so half-faces are not left behind."""
+    frontal = face_region_mask(64, 96, Pose(48, 32, 28, 0, 0.0), scale=1.15, feather_px=0)
+    profile = face_region_mask(64, 96, Pose(48, 32, 28, 0, 1.1), scale=1.15, feather_px=0)
+    assert profile.sum() > frontal.sum() * 1.08
+
+
+def test_profile_landmarks_inflate_size():
+    """Collapsed temple width (profile) should not under-size the face diameter."""
+    frontal = landmarks()
+    profile = landmarks()
+    # Pull temples/eyes toward center like a yawed face silhouette.
+    profile[234], profile[454] = [0.42, 0.5], [0.55, 0.5]
+    profile[33], profile[263] = [0.44, 0.45], [0.52, 0.45]
+    profile[1] = [0.58, 0.5]  # nose shifted right
+    frontal_pose = pose_from_landmarks(frontal, 200, 200, face_scale=1.0, y_offset=0.0)
+    profile_pose = pose_from_landmarks(profile, 200, 200, face_scale=1.0, y_offset=0.0)
+    assert abs(profile_pose.yaw) > abs(frontal_pose.yaw)
+    assert profile_pose.size >= frontal_pose.size * 0.85
+
+
+def test_merge_pose_prefers_larger_box_on_profile():
+    from nodes.tracking_core import merge_pose_pair
+
+    landmark = Pose(40, 40, 20, 0.0, 0.9)
+    yunet = Pose(42, 41, 34, 0.0, 1.0)
+    merged = merge_pose_pair(landmark, yunet)
+    assert merged.size >= 30
+    assert abs(merged.yaw) >= 0.9
+
+
 import pytest

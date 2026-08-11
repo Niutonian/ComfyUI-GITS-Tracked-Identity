@@ -128,6 +128,11 @@ def _xy(landmarks: Sequence[Any], index: int) -> tuple[float, float]:
     return float(point[0]), float(point[1])
 
 
+def profile_amount(yaw: float) -> float:
+    """0 = frontal, 1 = strong profile/side shot."""
+    return float(np.clip((abs(float(yaw)) - 0.28) / 0.95, 0.0, 1.0))
+
+
 def pose_from_landmarks(
     landmarks: Sequence[Any], width: int, height: int, face_scale: float = 1.0, y_offset: float = -0.02
 ) -> Pose:
@@ -135,19 +140,32 @@ def pose_from_landmarks(
     left_temple, right_temple = _xy(landmarks, 234), _xy(landmarks, 454)
     forehead, chin = _xy(landmarks, 10), _xy(landmarks, 152)
     nose = _xy(landmarks, 1)
+    # Cheek landmarks help when temples collapse under yaw.
+    left_cheek, right_cheek = _xy(landmarks, 234), _xy(landmarks, 454)
     eye_mid = ((left_eye[0] + right_eye[0]) * width / 2, (left_eye[1] + right_eye[1]) * height / 2)
     face_mid = ((forehead[0] + chin[0]) * width / 2, (forehead[1] + chin[1]) * height / 2)
     center_x = (eye_mid[0] + face_mid[0]) / 2
     center_y = (eye_mid[1] + face_mid[1]) / 2
     temple_width = math.hypot((right_temple[0] - left_temple[0]) * width, (right_temple[1] - left_temple[1]) * height)
+    cheek_width = math.hypot((right_cheek[0] - left_cheek[0]) * width, (right_cheek[1] - left_cheek[1]) * height)
     face_height = math.hypot((chin[0] - forehead[0]) * width, (chin[1] - forehead[1]) * height)
-    size = max(temple_width, face_height) * float(face_scale)
+    eye_width = math.hypot((right_eye[0] - left_eye[0]) * width, (right_eye[1] - left_eye[1]) * height)
+    # Frontal: max of temple/height. Profile: temple width collapses — prefer height + inflate.
+    width_proxy = max(temple_width, cheek_width, eye_width * 1.35)
+    aspect = width_proxy / max(face_height, 1.0)
+    size = max(width_proxy, face_height) * float(face_scale)
+    if aspect < 0.72:
+        # Side-ish pose: MediaPipe under-reports face diameter; enlarge for LaMa coverage.
+        size = max(size, face_height * (1.2 + (0.72 - aspect) * 1.1) * float(face_scale))
     center_y += float(y_offset) * size
     roll = math.atan2((right_eye[1] - left_eye[1]) * height, (right_eye[0] - left_eye[0]) * width)
-    # Approximate yaw from nose offset vs. face center, normalized by inter-temple width.
+    # Yaw from nose offset; fall back to eye/cheek asymmetry when temples are narrow.
     nose_x = nose[0] * width
-    denom = max(temple_width, 1.0)
-    yaw = float(np.clip((nose_x - center_x) / (0.5 * denom), -1.5, 1.5))
+    denom = max(width_proxy, face_height * 0.55, 1.0)
+    yaw = float(np.clip((nose_x - center_x) / (0.5 * denom), -1.75, 1.75))
+    if aspect < 0.65 and abs(yaw) < 0.45:
+        # If geometry is profile-like but nose yaw is weak, boost from eye mid vs face mid.
+        yaw = float(np.clip((eye_mid[0] - face_mid[0]) / max(face_height * 0.25, 1.0), -1.75, 1.75))
     return Pose(center_x, center_y, size, roll, yaw)
 
 
@@ -220,19 +238,63 @@ def face_region_mask(
     scale: float = 1.15,
     feather_px: int = 8,
 ) -> np.ndarray:
-    """Create a full-face elliptical mask for censoring or diffusion inpainting."""
+    """Create a full-face mask for censoring or LaMa inpainting.
+
+    Frontal faces use a centered ellipse. Side / profile shots expand and
+    shift the mask so jaw, ear, and rear hairline stay covered — the common
+    failure mode where LaMa leaves half a face on sideshots.
+    """
     import cv2
 
     mask = np.zeros((frame_height, frame_width), dtype=np.uint8)
-    # Mild horizontal squeeze when yaw is large so the removal region follows the head turn.
-    yaw_squeeze = float(np.clip(1.0 - abs(pose.yaw) * 0.18, 0.7, 1.0))
-    radius_x = max(1, int(round(pose.size * float(scale) * 0.5 * yaw_squeeze)))
-    radius_y = max(1, int(round(pose.size * float(scale) * 0.5 * 1.08)))
-    center = (int(round(pose.x)), int(round(pose.y)))
-    cv2.ellipse(mask, center, (radius_x, radius_y), math.degrees(pose.roll), 0, 360, 255, -1, cv2.LINE_AA)
+    profile = profile_amount(pose.yaw)
+    # Expand overall diameter on profiles (under-masking is worse than mild over-paint).
+    scale_eff = float(scale) * (1.0 + 0.42 * profile)
+    # Slightly taller + wider on profile for jawline / crown.
+    radius_x = max(1, int(round(pose.size * scale_eff * 0.5 * (1.0 + 0.22 * profile))))
+    radius_y = max(1, int(round(pose.size * scale_eff * 0.5 * (1.08 + 0.12 * profile))))
+    # Shift mask toward the back of the head (opposite nose) so ear/occiput is covered,
+    # and keep a second lobe toward the face for chin/jaw.
+    yaw_sign = 0.0 if abs(pose.yaw) < 1e-3 else float(np.sign(pose.yaw))
+    shift = pose.size * scale_eff * 0.16 * profile
+    # Nose-side is +yaw_sign in image x from our yaw definition (nose right of center → +yaw).
+    face_cx = pose.x + yaw_sign * shift * 0.35
+    back_cx = pose.x - yaw_sign * shift
+    cy = pose.y
+    angle = math.degrees(pose.roll)
+    cv2.ellipse(
+        mask,
+        (int(round(face_cx)), int(round(cy))),
+        (radius_x, radius_y),
+        angle,
+        0,
+        360,
+        255,
+        -1,
+        cv2.LINE_AA,
+    )
+    if profile > 0.12:
+        back_rx = max(1, int(round(radius_x * (0.75 + 0.2 * profile))))
+        back_ry = max(1, int(round(radius_y * (0.9 + 0.1 * profile))))
+        cv2.ellipse(
+            mask,
+            (int(round(back_cx)), int(round(cy))),
+            (back_rx, back_ry),
+            angle,
+            0,
+            360,
+            255,
+            -1,
+            cv2.LINE_AA,
+        )
     feather = max(0, int(feather_px))
+    # Slightly more feather on profiles so LaMa edges do not hard-cut hair.
+    if profile > 0.2:
+        feather = max(feather, int(round(feather * (1.0 + 0.5 * profile) + 2 * profile)))
     if feather:
         kernel = feather * 2 + 1
+        if kernel % 2 == 0:
+            kernel += 1
         mask = cv2.GaussianBlur(mask, (kernel, kernel), 0)
     return mask.astype(np.float32) / 255.0
 
@@ -261,10 +323,41 @@ def _pose_iou_proxy(a: Pose, b: Pose) -> float:
     return inter / (area_a + area_b - inter)
 
 
+def merge_pose_pair(landmark_pose: Pose, box_pose: Pose) -> Pose:
+    """Combine MediaPipe geometry with a YuNet box for better side-shot size/coverage."""
+    # Prefer landmark center/roll; take the larger diameter (YuNet box is often better in profile).
+    size = max(landmark_pose.size, box_pose.size * 0.95)
+    # Stronger yaw wins; if box has almost no yaw, keep landmark yaw.
+    if abs(box_pose.yaw) > abs(landmark_pose.yaw) + 0.15:
+        yaw = box_pose.yaw
+    else:
+        yaw = landmark_pose.yaw
+    profile = profile_amount(yaw)
+    if profile > 0.25:
+        size = max(size, box_pose.size * (1.05 + 0.15 * profile))
+    return Pose(landmark_pose.x, landmark_pose.y, size, landmark_pose.roll, yaw)
+
+
 def fuse_poses(primary: list[Pose], secondary: list[Pose], iou_threshold: float = 0.35) -> list[Pose]:
-    """Keep MediaPipe landmarks when present; add YuNet-only faces that do not overlap."""
+    """Merge overlapping detectors; keep YuNet-only faces that do not overlap."""
     fused = list(primary)
-    for candidate in secondary:
+    used_secondary: set[int] = set()
+    for i, existing in enumerate(list(fused)):
+        best_j = None
+        best_iou = iou_threshold
+        for j, candidate in enumerate(secondary):
+            if j in used_secondary:
+                continue
+            iou = _pose_iou_proxy(candidate, existing)
+            if iou >= best_iou:
+                best_iou = iou
+                best_j = j
+        if best_j is not None:
+            fused[i] = merge_pose_pair(existing, secondary[best_j])
+            used_secondary.add(best_j)
+    for j, candidate in enumerate(secondary):
+        if j in used_secondary:
+            continue
         if any(_pose_iou_proxy(candidate, existing) >= iou_threshold for existing in fused):
             continue
         fused.append(candidate)
@@ -347,10 +440,23 @@ class YuNetFaceDetector:
             x, y, w, h = (float(v) * inv for v in face[:4])
             eye_a = (float(face[4]) * inv, float(face[5]) * inv)
             eye_b = (float(face[6]) * inv, float(face[7]) * inv)
+            # YuNet 2023 order: right eye, left eye, nose tip, right mouth, left mouth.
+            nose = (float(face[8]) * inv, float(face[9]) * inv) if len(face) >= 10 else None
             left_eye, right_eye = sorted((eye_a, eye_b), key=lambda point: point[0])
             roll = math.atan2(right_eye[1] - left_eye[1], right_eye[0] - left_eye[0])
-            size = max(w, h) * 1.15 * float(face_scale)
-            poses.append(Pose(x + w / 2.0, y + h / 2.0 + float(y_offset) * size, size, roll, 0.0))
+            # Profile boxes are often wider than tall in pixel space after turn; keep both axes.
+            aspect = w / max(h, 1.0)
+            size = max(w, h) * 1.2 * float(face_scale)
+            if aspect < 0.78 or aspect > 1.35:
+                # Side / tall faces: inflate so LaMa ROI covers jaw + ear.
+                size = max(w, h) * (1.28 + 0.15 * abs(1.0 - aspect)) * float(face_scale)
+            cx = x + w / 2.0
+            cy = y + h / 2.0 + float(y_offset) * size
+            yaw = 0.0
+            if nose is not None:
+                # Nose left of box center → looking toward image left (negative yaw).
+                yaw = float(np.clip((nose[0] - cx) / max(w * 0.35, 1.0), -1.75, 1.75))
+            poses.append(Pose(cx, cy, size, roll, yaw))
         return poses
 
     def detect_poses(
@@ -361,11 +467,13 @@ class YuNetFaceDetector:
         small_face_boost: bool = False,
     ) -> list[Pose]:
         poses = self._detect_at_scale(rgb, face_scale, y_offset, 1.0)
-        if not small_face_boost:
-            return poses
-        # Second pass on a 1.5x upscale recovers distant / tiny faces (movie stills, webcam far).
         height, width = rgb.shape[:2]
-        if min(height, width) >= 96:
+        if small_face_boost and min(height, width) >= 96:
+            # Upscale pass recovers distant faces and many near-profile detections.
             boosted = self._detect_at_scale(rgb, face_scale, y_offset, 1.5)
             poses = fuse_poses(poses, boosted, iou_threshold=0.4)
+        if small_face_boost and min(height, width) >= 160:
+            # Mild 1.25x pass helps intermediate side shots without the cost of 2x full-frame.
+            mid = self._detect_at_scale(rgb, face_scale, y_offset, 1.25)
+            poses = fuse_poses(poses, mid, iou_threshold=0.4)
         return poses

@@ -9,7 +9,7 @@ import torch
 import torch.nn.functional as F
 
 
-def mask_box(mask: torch.Tensor, padding: float = 0.35) -> tuple[int, int, int, int] | None:
+def mask_box(mask: torch.Tensor, padding: float = 0.42) -> tuple[int, int, int, int] | None:
     points = torch.nonzero(mask > 0.02, as_tuple=False)
     if points.numel() == 0:
         return None
@@ -17,7 +17,10 @@ def mask_box(mask: torch.Tensor, padding: float = 0.35) -> tuple[int, int, int, 
     y0, x0 = points.amin(dim=0).tolist()
     y1, x1 = points.amax(dim=0).tolist()
     box_w, box_h = x1 - x0 + 1, y1 - y0 + 1
-    side = max(box_w, box_h) * (1.0 + 2.0 * float(padding))
+    # Elongated masks (typical of side shots) need extra context for LaMa.
+    aspect = max(box_w, box_h) / max(min(box_w, box_h), 1)
+    pad = float(padding) + 0.12 * float(np.clip(aspect - 1.0, 0.0, 1.5))
+    side = max(box_w, box_h) * (1.0 + 2.0 * pad)
     cx, cy = (x0 + x1 + 1) / 2.0, (y0 + y1 + 1) / 2.0
     x0 = max(0, round(cx - side / 2.0))
     y0 = max(0, round(cy - side / 2.0))
