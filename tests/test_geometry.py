@@ -69,6 +69,20 @@ def test_profile_boost_expands_sides_not_frontal():
     assert profile_high.sum() > profile_low.sum() * 1.05
 
 
+def test_partial_face_boost_expands_edge_crop_not_centered():
+    from nodes.tracking_core import partial_amount
+
+    centered = Pose(48, 32, 24, 0, 0.0)
+    edge = Pose(6, 32, 28, 0, 0.0)  # half the face past left border
+    assert partial_amount(edge, 96, 64) > partial_amount(centered, 96, 64)
+    full_low = face_region_mask(64, 96, centered, scale=1.15, feather_px=0, partial_face_boost=0.0)
+    full_high = face_region_mask(64, 96, centered, scale=1.15, feather_px=0, partial_face_boost=1.0)
+    assert abs(float(full_high.sum()) - float(full_low.sum())) / max(float(full_low.sum()), 1.0) < 0.08
+    part_low = face_region_mask(64, 96, edge, scale=1.15, feather_px=0, partial_face_boost=0.0)
+    part_high = face_region_mask(64, 96, edge, scale=1.15, feather_px=0, partial_face_boost=1.0)
+    assert part_high.sum() > part_low.sum() * 1.04
+
+
 def test_profile_landmarks_inflate_size():
     """Collapsed temple width (profile) should not under-size the face diameter."""
     frontal = landmarks()

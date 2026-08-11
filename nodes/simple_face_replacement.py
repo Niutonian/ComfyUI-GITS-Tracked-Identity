@@ -52,6 +52,16 @@ class GITSSimpleFaceReplacement:
                         "tooltip": "Extra LaMa mask expansion on side shots only. Raise if profiles leave half a face.",
                     },
                 ),
+                "partial_face_boost": (
+                    "FLOAT",
+                    {
+                        "default": 0.55,
+                        "min": 0.0,
+                        "max": 1.0,
+                        "step": 0.01,
+                        "tooltip": "Extra mask expansion when only part of the face is visible (edge crop). Full faces almost unchanged.",
+                    },
+                ),
             },
             "optional": {
                 "static_logo": ("IMAGE",),
@@ -94,6 +104,7 @@ class GITSSimpleFaceReplacement:
         edge_aware_mask=0.35,
         yaw_foreshorten=0.4,
         profile_boost=0.55,
+        partial_face_boost=0.55,
         static_logo=None,
         static_logo_mask=None,
         ring_logo=None,
@@ -142,6 +153,7 @@ class GITSSimpleFaceReplacement:
             edge_aware_mask=edge_aware_mask,
             yaw_foreshorten=yaw_foreshorten,
             profile_boost=profile_boost,
+            partial_face_boost=partial_face_boost,
             track_prediction=True,
             fuse_detectors=True,
             small_face_boost=True,

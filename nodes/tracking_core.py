@@ -133,6 +133,36 @@ def profile_amount(yaw: float) -> float:
     return float(np.clip((abs(float(yaw)) - 0.28) / 0.95, 0.0, 1.0))
 
 
+# Sparse face-oval / contour indices (MediaPipe 468 topology) for partial-face boxes.
+_FACE_OVAL_IDX = (
+    10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288, 397, 365, 379, 378,
+    400, 377, 152, 148, 176, 149, 150, 136, 172, 58, 132, 93, 234, 127, 162, 21,
+    54, 103, 67, 109,
+)
+
+
+def partial_amount(pose: Pose, frame_width: int, frame_height: int) -> float:
+    """0 = fully inside frame, 1 = heavily clipped / edge-partial face."""
+    half = max(pose.size * 0.5, 1.0)
+    fw, fh = float(frame_width), float(frame_height)
+    left_out = max(0.0, half - pose.x) / half
+    right_out = max(0.0, half - (fw - pose.x)) / half
+    top_out = max(0.0, half - pose.y) / half
+    bot_out = max(0.0, half - (fh - pose.y)) / half
+    clipped = max(left_out, right_out, top_out, bot_out)
+    margin = max(pose.size * 0.4, 8.0)
+    near = 0.0
+    if pose.x < margin:
+        near = max(near, 1.0 - pose.x / margin)
+    if pose.x > fw - margin:
+        near = max(near, 1.0 - (fw - pose.x) / margin)
+    if pose.y < margin:
+        near = max(near, 1.0 - pose.y / margin)
+    if pose.y > fh - margin:
+        near = max(near, 1.0 - (fh - pose.y) / margin)
+    return float(np.clip(max(clipped, near * 0.9), 0.0, 1.0))
+
+
 def pose_from_landmarks(
     landmarks: Sequence[Any], width: int, height: int, face_scale: float = 1.0, y_offset: float = -0.02
 ) -> Pose:
@@ -157,6 +187,39 @@ def pose_from_landmarks(
     if aspect < 0.72:
         # Side-ish pose: MediaPipe under-reports face diameter; enlarge for LaMa coverage.
         size = max(size, face_height * (1.2 + (0.72 - aspect) * 1.1) * float(face_scale))
+
+    # Oval bbox recovers size when only part of the mesh is on-screen (cropped face).
+    xs, ys = [], []
+    n_landmarks = len(landmarks)
+    for index in _FACE_OVAL_IDX:
+        if index >= n_landmarks:
+            continue
+        px, py = _xy(landmarks, index)
+        xs.append(px * width)
+        ys.append(py * height)
+    if len(xs) >= 8:
+        min_x, max_x = min(xs), max(xs)
+        min_y, max_y = min(ys), max(ys)
+        bbox_w = max_x - min_x
+        bbox_h = max_y - min_y
+        bbox_size = max(bbox_w, bbox_h) * 1.12 * float(face_scale)
+        size = max(size, bbox_size)
+        # If the oval hugs a frame edge, center on the visible mass and inflate further.
+        edge_hits = 0
+        margin_n = 0.04
+        if min_x <= width * margin_n or max_x >= width * (1.0 - margin_n):
+            edge_hits += 1
+        if min_y <= height * margin_n or max_y >= height * (1.0 - margin_n):
+            edge_hits += 1
+        if edge_hits:
+            center_x = 0.55 * center_x + 0.45 * (min_x + max_x) * 0.5
+            center_y = 0.55 * center_y + 0.45 * (min_y + max_y) * 0.5
+            size *= 1.0 + 0.18 * edge_hits
+            # Landmark cloud is one-sided when half the face is off-frame.
+            span_ratio = max(bbox_w, bbox_h) / max(min(bbox_w, bbox_h), 1.0)
+            if span_ratio > 1.35:
+                size *= 1.0 + 0.12 * min(span_ratio - 1.0, 1.0)
+
     center_y += float(y_offset) * size
     roll = math.atan2((right_eye[1] - left_eye[1]) * height, (right_eye[0] - left_eye[0]) * width)
     # Yaw from nose offset; fall back to eye/cheek asymmetry when temples are narrow.
@@ -238,35 +301,52 @@ def face_region_mask(
     scale: float = 1.15,
     feather_px: int = 8,
     profile_boost: float = 0.55,
+    partial_face_boost: float = 0.55,
 ) -> np.ndarray:
     """Create a full-face mask for censoring or LaMa inpainting.
 
-    Frontal faces use a centered ellipse and are almost unaffected by
-    ``profile_boost``. Side / profile shots expand and shift the mask so jaw,
-    ear, and rear hairline stay covered. Raise ``profile_boost`` (0–1) when
-    LaMa leaves half a face on sideshots; leave it low for tight frontal masks.
+    - ``profile_boost``: extra expand on side/profile yaw (frontal almost unchanged).
+    - ``partial_face_boost``: extra expand when the face is cropped by the frame
+      edge or only partly visible; shifts the mask toward the visible interior.
     """
     import cv2
 
     mask = np.zeros((frame_height, frame_width), dtype=np.uint8)
     profile = profile_amount(pose.yaw)
-    boost = float(np.clip(profile_boost, 0.0, 1.0))
+    p_boost = float(np.clip(profile_boost, 0.0, 1.0))
     # Frontal (profile≈0) → strength 0. Side shots scale with boost.
-    # boost=0 keeps mild auto expand; boost=1 is aggressive profile coverage.
-    strength = profile * (0.40 + 0.60 * boost)
-    # Expand overall diameter on profiles (under-masking is worse than mild over-paint).
-    scale_eff = float(scale) * (1.0 + 0.55 * strength)
-    # Slightly taller + wider on profile for jawline / crown.
-    radius_x = max(1, int(round(pose.size * scale_eff * 0.5 * (1.0 + 0.28 * strength))))
-    radius_y = max(1, int(round(pose.size * scale_eff * 0.5 * (1.08 + 0.16 * strength))))
-    # Shift mask toward the back of the head (opposite nose) so ear/occiput is covered,
-    # and keep a second lobe toward the face for chin/jaw.
+    strength = profile * (0.40 + 0.60 * p_boost)
+
+    partial = partial_amount(pose, frame_width, frame_height)
+    partial_boost = float(np.clip(partial_face_boost, 0.0, 1.0))
+    # Fully inside frame → partial≈0 so boost does nothing. Edge/crop → expands.
+    partial_strength = partial * (0.35 + 0.65 * partial_boost)
+
+    # Expand overall diameter (under-masking is worse than mild over-paint).
+    scale_eff = float(scale) * (1.0 + 0.55 * strength + 0.50 * partial_strength)
+    radius_x = max(
+        1,
+        int(round(pose.size * scale_eff * 0.5 * (1.0 + 0.28 * strength + 0.20 * partial_strength))),
+    )
+    radius_y = max(
+        1,
+        int(round(pose.size * scale_eff * 0.5 * (1.08 + 0.16 * strength + 0.18 * partial_strength))),
+    )
+    # Profile: shift toward back of head. Partial: shift toward image interior.
     yaw_sign = 0.0 if abs(pose.yaw) < 1e-3 else float(np.sign(pose.yaw))
     shift = pose.size * scale_eff * 0.20 * strength
-    # Nose-side is +yaw_sign in image x from our yaw definition (nose right of center → +yaw).
     face_cx = pose.x + yaw_sign * shift * 0.35
     back_cx = pose.x - yaw_sign * shift
     cy = pose.y
+    if partial_strength > 0.08:
+        # Pull mask mass toward the visible interior of the frame.
+        inward_x = (frame_width * 0.5 - pose.x)
+        inward_y = (frame_height * 0.5 - pose.y)
+        pull = pose.size * scale_eff * 0.22 * partial_strength
+        norm = math.hypot(inward_x, inward_y) or 1.0
+        face_cx += (inward_x / norm) * pull
+        back_cx += (inward_x / norm) * pull * 0.5
+        cy += (inward_y / norm) * pull
     angle = math.degrees(pose.roll)
     cv2.ellipse(
         mask,
@@ -293,10 +373,35 @@ def face_region_mask(
             -1,
             cv2.LINE_AA,
         )
+    # Extra lobe covering the visible side when the face is cut by the frame.
+    if partial_strength > 0.12:
+        half = pose.size * scale_eff * 0.5
+        edge_cx, edge_cy = face_cx, cy
+        if pose.x < half:
+            edge_cx = max(radius_x * 0.55, pose.x * 0.4 + radius_x * 0.35)
+        elif pose.x > frame_width - half:
+            edge_cx = min(frame_width - radius_x * 0.55, pose.x * 0.4 + (frame_width - radius_x * 0.35) * 0.6)
+        if pose.y < half:
+            edge_cy = max(radius_y * 0.55, pose.y * 0.4 + radius_y * 0.35)
+        elif pose.y > frame_height - half:
+            edge_cy = min(frame_height - radius_y * 0.55, pose.y * 0.4 + (frame_height - radius_y * 0.35) * 0.6)
+        edge_rx = max(1, int(round(radius_x * (0.85 + 0.25 * partial_strength))))
+        edge_ry = max(1, int(round(radius_y * (0.85 + 0.25 * partial_strength))))
+        cv2.ellipse(
+            mask,
+            (int(round(edge_cx)), int(round(edge_cy))),
+            (edge_rx, edge_ry),
+            angle,
+            0,
+            360,
+            255,
+            -1,
+            cv2.LINE_AA,
+        )
     feather = max(0, int(feather_px))
-    # Slightly more feather on profiles so LaMa edges do not hard-cut hair.
-    if strength > 0.15:
-        feather = max(feather, int(round(feather * (1.0 + 0.55 * strength) + 3 * strength)))
+    adapt = max(strength, partial_strength)
+    if adapt > 0.15:
+        feather = max(feather, int(round(feather * (1.0 + 0.55 * adapt) + 3 * adapt)))
     if feather:
         kernel = feather * 2 + 1
         if kernel % 2 == 0:
@@ -442,6 +547,9 @@ class YuNetFaceDetector:
             return []
         inv = 1.0 / scale
         poses = []
+        # After * inv, coordinates are in original frame space (rgb before this scale pass).
+        # For scaled detection, inv maps back to the full-resolution frame of the caller.
+        frame_h, frame_w = float(rgb.shape[0]) / scale, float(rgb.shape[1]) / scale
         for face in faces:
             x, y, w, h = (float(v) * inv for v in face[:4])
             eye_a = (float(face[4]) * inv, float(face[5]) * inv)
@@ -457,7 +565,30 @@ class YuNetFaceDetector:
                 # Side / tall faces: inflate so LaMa ROI covers jaw + ear.
                 size = max(w, h) * (1.28 + 0.15 * abs(1.0 - aspect)) * float(face_scale)
             cx = x + w / 2.0
-            cy = y + h / 2.0 + float(y_offset) * size
+            cy = y + h / 2.0
+            # Boxes flush against the image edge usually mean a cropped / partial face.
+            edge_pad = 2.0
+            touches = 0
+            if x <= edge_pad:
+                touches += 1
+            if y <= edge_pad:
+                touches += 1
+            if x + w >= frame_w - edge_pad:
+                touches += 1
+            if y + h >= frame_h - edge_pad:
+                touches += 1
+            if touches:
+                size *= 1.0 + 0.22 * touches
+                # Bias center slightly into the frame so the visible half is covered.
+                if x <= edge_pad:
+                    cx += w * 0.12
+                if x + w >= frame_w - edge_pad:
+                    cx -= w * 0.12
+                if y <= edge_pad:
+                    cy += h * 0.10
+                if y + h >= frame_h - edge_pad:
+                    cy -= h * 0.10
+            cy += float(y_offset) * size
             yaw = 0.0
             if nose is not None:
                 # Nose left of box center → looking toward image left (negative yaw).

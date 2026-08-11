@@ -35,6 +35,7 @@ def render_multi_face_batch(
     yaw_foreshorten: float = 0.0,
     rotation_phase: float = 0.0,
     profile_boost: float = 0.55,
+    partial_face_boost: float = 0.55,
 ):
     frames = tensor_images_to_numpy(images)
     _, height, width, _ = frames.shape
@@ -71,6 +72,7 @@ def render_multi_face_batch(
                 float(removal_area),
                 int(occlusion_feather_px),
                 profile_boost=float(profile_boost),
+                partial_face_boost=float(partial_face_boost),
             ) * alpha
             if float(edge_aware_mask) > 0.0:
                 individual_mask = edge_aware_face_mask(frame, individual_mask, float(edge_aware_mask))

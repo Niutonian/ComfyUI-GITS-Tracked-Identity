@@ -203,6 +203,8 @@ Available on Simple, Advanced, and Webcam (`effect_preset`):
 - `yaw_foreshorten` — cheap horizontal squash from estimated head yaw
 - `profile_boost` — extra face-mask / LaMa expansion on **side shots only**
   (0 = mild auto, 1 = aggressive profile coverage; frontal almost unchanged)
+- `partial_face_boost` — extra expansion when the face is **cropped by the frame
+  edge** or only partly visible (0 = mild auto, 1 = aggressive; full faces almost unchanged)
 
 ## Workflows
 
