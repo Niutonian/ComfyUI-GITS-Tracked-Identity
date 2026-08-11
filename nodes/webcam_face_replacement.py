@@ -48,6 +48,16 @@ class GITSWebcamFaceReplacement:
                 "signal_flicker": ("FLOAT", {"default": 0.1, "min": 0.0, "max": 1.0, "step": 0.01}),
                 "edge_aware_mask": ("FLOAT", {"default": 0.25, "min": 0.0, "max": 1.0, "step": 0.01}),
                 "yaw_foreshorten": ("FLOAT", {"default": 0.35, "min": 0.0, "max": 1.0, "step": 0.01}),
+                "profile_boost": (
+                    "FLOAT",
+                    {
+                        "default": 0.55,
+                        "min": 0.0,
+                        "max": 1.0,
+                        "step": 0.01,
+                        "tooltip": "Extra LaMa mask expansion on side shots only. Raise if profiles leave half a face.",
+                    },
+                ),
             },
             "optional": {
                 "static_logo": ("IMAGE",),
@@ -156,6 +166,7 @@ class GITSWebcamFaceReplacement:
         signal_flicker: float,
         edge_aware_mask: float,
         yaw_foreshorten: float,
+        profile_boost: float = 0.55,
     ):
         height, width = images.shape[1:3]
         tracker = self._ensure_multi_tracker(fps, max_faces, width, height)
@@ -180,6 +191,8 @@ class GITSWebcamFaceReplacement:
             signal_flicker,
             edge_aware_mask,
             yaw_foreshorten,
+            0.0,
+            profile_boost,
         )
         return overlay, art_mask, union_mask, per_frame_faces
 
@@ -245,6 +258,7 @@ class GITSWebcamFaceReplacement:
         signal_flicker=0.1,
         edge_aware_mask=0.25,
         yaw_foreshorten=0.35,
+        profile_boost=0.55,
         static_logo=None,
         static_logo_mask=None,
         ring_logo=None,
@@ -267,6 +281,7 @@ class GITSWebcamFaceReplacement:
                 "signal_flicker": signal_flicker,
                 "edge_aware_mask": edge_aware_mask,
                 "yaw_foreshorten": yaw_foreshorten,
+                "profile_boost": profile_boost,
                 "min_cutoff": 1.2,
                 "beta": 0.035,
                 "hold_frames": 6,
@@ -299,6 +314,7 @@ class GITSWebcamFaceReplacement:
         signal_flicker = cfg["signal_flicker"]
         edge_aware_mask = cfg["edge_aware_mask"]
         yaw_foreshorten = cfg["yaw_foreshorten"]
+        profile_boost = cfg["profile_boost"]
 
         # Logos are fully optional: tracking + LaMa / blur fill still run without them.
         if _is_missing_image(static_logo):
@@ -326,6 +342,7 @@ class GITSWebcamFaceReplacement:
             signal_flicker,
             edge_aware_mask,
             yaw_foreshorten,
+            profile_boost,
         )
         self.frame_index += int(images.shape[0])
         source = images.to(dtype=torch.float32).clamp(0.0, 1.0)

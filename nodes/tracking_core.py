@@ -237,26 +237,32 @@ def face_region_mask(
     pose: Pose,
     scale: float = 1.15,
     feather_px: int = 8,
+    profile_boost: float = 0.55,
 ) -> np.ndarray:
     """Create a full-face mask for censoring or LaMa inpainting.
 
-    Frontal faces use a centered ellipse. Side / profile shots expand and
-    shift the mask so jaw, ear, and rear hairline stay covered — the common
-    failure mode where LaMa leaves half a face on sideshots.
+    Frontal faces use a centered ellipse and are almost unaffected by
+    ``profile_boost``. Side / profile shots expand and shift the mask so jaw,
+    ear, and rear hairline stay covered. Raise ``profile_boost`` (0–1) when
+    LaMa leaves half a face on sideshots; leave it low for tight frontal masks.
     """
     import cv2
 
     mask = np.zeros((frame_height, frame_width), dtype=np.uint8)
     profile = profile_amount(pose.yaw)
+    boost = float(np.clip(profile_boost, 0.0, 1.0))
+    # Frontal (profile≈0) → strength 0. Side shots scale with boost.
+    # boost=0 keeps mild auto expand; boost=1 is aggressive profile coverage.
+    strength = profile * (0.40 + 0.60 * boost)
     # Expand overall diameter on profiles (under-masking is worse than mild over-paint).
-    scale_eff = float(scale) * (1.0 + 0.42 * profile)
+    scale_eff = float(scale) * (1.0 + 0.55 * strength)
     # Slightly taller + wider on profile for jawline / crown.
-    radius_x = max(1, int(round(pose.size * scale_eff * 0.5 * (1.0 + 0.22 * profile))))
-    radius_y = max(1, int(round(pose.size * scale_eff * 0.5 * (1.08 + 0.12 * profile))))
+    radius_x = max(1, int(round(pose.size * scale_eff * 0.5 * (1.0 + 0.28 * strength))))
+    radius_y = max(1, int(round(pose.size * scale_eff * 0.5 * (1.08 + 0.16 * strength))))
     # Shift mask toward the back of the head (opposite nose) so ear/occiput is covered,
     # and keep a second lobe toward the face for chin/jaw.
     yaw_sign = 0.0 if abs(pose.yaw) < 1e-3 else float(np.sign(pose.yaw))
-    shift = pose.size * scale_eff * 0.16 * profile
+    shift = pose.size * scale_eff * 0.20 * strength
     # Nose-side is +yaw_sign in image x from our yaw definition (nose right of center → +yaw).
     face_cx = pose.x + yaw_sign * shift * 0.35
     back_cx = pose.x - yaw_sign * shift
@@ -273,9 +279,9 @@ def face_region_mask(
         -1,
         cv2.LINE_AA,
     )
-    if profile > 0.12:
-        back_rx = max(1, int(round(radius_x * (0.75 + 0.2 * profile))))
-        back_ry = max(1, int(round(radius_y * (0.9 + 0.1 * profile))))
+    if strength > 0.10:
+        back_rx = max(1, int(round(radius_x * (0.72 + 0.28 * strength))))
+        back_ry = max(1, int(round(radius_y * (0.88 + 0.14 * strength))))
         cv2.ellipse(
             mask,
             (int(round(back_cx)), int(round(cy))),
@@ -289,8 +295,8 @@ def face_region_mask(
         )
     feather = max(0, int(feather_px))
     # Slightly more feather on profiles so LaMa edges do not hard-cut hair.
-    if profile > 0.2:
-        feather = max(feather, int(round(feather * (1.0 + 0.5 * profile) + 2 * profile)))
+    if strength > 0.15:
+        feather = max(feather, int(round(feather * (1.0 + 0.55 * strength) + 3 * strength)))
     if feather:
         kernel = feather * 2 + 1
         if kernel % 2 == 0:

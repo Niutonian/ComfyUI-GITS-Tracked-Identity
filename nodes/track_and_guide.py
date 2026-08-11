@@ -193,6 +193,16 @@ class GITSTrackAndGuide:
                 "signal_flicker": ("FLOAT", {"default": 0.1, "min": 0.0, "max": 1.0, "step": 0.01}),
                 "edge_aware_mask": ("FLOAT", {"default": 0.35, "min": 0.0, "max": 1.0, "step": 0.01}),
                 "yaw_foreshorten": ("FLOAT", {"default": 0.4, "min": 0.0, "max": 1.0, "step": 0.01}),
+                "profile_boost": (
+                    "FLOAT",
+                    {
+                        "default": 0.55,
+                        "min": 0.0,
+                        "max": 1.0,
+                        "step": 0.01,
+                        "tooltip": "Extra LaMa/face-mask expansion on side shots only. 0 keeps tight frontal masks; raise toward 1 if profiles leave half a face.",
+                    },
+                ),
                 "track_prediction": ("BOOLEAN", {"default": True}),
                 "fuse_detectors": ("BOOLEAN", {"default": True}),
                 "small_face_boost": ("BOOLEAN", {"default": True}),
@@ -300,6 +310,7 @@ class GITSTrackAndGuide:
         fuse_detectors,
         small_face_boost,
         rotation_phase,
+        profile_boost,
     ):
         from .multi_face_rendering import render_multi_face_batch
 
@@ -345,6 +356,7 @@ class GITSTrackAndGuide:
                 float(edge_aware_mask),
                 float(yaw_foreshorten),
                 float(rotation_phase),
+                float(profile_boost),
             )
         finally:
             tracker.close()
@@ -418,6 +430,7 @@ class GITSTrackAndGuide:
         signal_flicker=0.1,
         edge_aware_mask=0.35,
         yaw_foreshorten=0.4,
+        profile_boost=0.55,
         track_prediction=True,
         fuse_detectors=True,
         small_face_boost=True,
@@ -464,6 +477,7 @@ class GITSTrackAndGuide:
                 "signal_flicker": signal_flicker,
                 "edge_aware_mask": edge_aware_mask,
                 "yaw_foreshorten": yaw_foreshorten,
+                "profile_boost": profile_boost,
                 "track_prediction": track_prediction,
                 "fuse_detectors": fuse_detectors,
                 "small_face_boost": small_face_boost,
@@ -489,6 +503,7 @@ class GITSTrackAndGuide:
         signal_flicker = cfg["signal_flicker"]
         edge_aware_mask = cfg["edge_aware_mask"]
         yaw_foreshorten = cfg["yaw_foreshorten"]
+        profile_boost = cfg["profile_boost"]
         track_prediction = cfg["track_prediction"]
         fuse_detectors = cfg["fuse_detectors"]
         small_face_boost = cfg["small_face_boost"]
@@ -535,6 +550,7 @@ class GITSTrackAndGuide:
                 fuse_detectors,
                 small_face_boost,
                 rotation_phase,
+                profile_boost,
             )
         frames = tensor_images_to_numpy(images)
         batch, height, width, _ = frames.shape
@@ -633,7 +649,12 @@ class GITSTrackAndGuide:
                     ).clip(0, 255).astype(np.uint8)
                     full_rgba = place_overlay_in_frame(combined, height, width, pose.x, pose.y)
                     face_mask = face_region_mask(
-                        height, width, pose, float(occlusion_scale), int(occlusion_feather_px)
+                        height,
+                        width,
+                        pose,
+                        float(occlusion_scale),
+                        int(occlusion_feather_px),
+                        profile_boost=float(profile_boost),
                     ) * float(alpha)
                     if float(edge_aware_mask) > 0.0:
                         face_mask = edge_aware_face_mask(frame, face_mask, float(edge_aware_mask))

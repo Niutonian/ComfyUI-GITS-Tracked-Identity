@@ -42,6 +42,16 @@ class GITSSimpleFaceReplacement:
                 "signal_flicker": ("FLOAT", {"default": 0.1, "min": 0.0, "max": 1.0, "step": 0.01}),
                 "edge_aware_mask": ("FLOAT", {"default": 0.35, "min": 0.0, "max": 1.0, "step": 0.01}),
                 "yaw_foreshorten": ("FLOAT", {"default": 0.4, "min": 0.0, "max": 1.0, "step": 0.01}),
+                "profile_boost": (
+                    "FLOAT",
+                    {
+                        "default": 0.55,
+                        "min": 0.0,
+                        "max": 1.0,
+                        "step": 0.01,
+                        "tooltip": "Extra LaMa mask expansion on side shots only. Raise if profiles leave half a face.",
+                    },
+                ),
             },
             "optional": {
                 "static_logo": ("IMAGE",),
@@ -83,6 +93,7 @@ class GITSSimpleFaceReplacement:
         signal_flicker=0.1,
         edge_aware_mask=0.35,
         yaw_foreshorten=0.4,
+        profile_boost=0.55,
         static_logo=None,
         static_logo_mask=None,
         ring_logo=None,
@@ -130,6 +141,7 @@ class GITSSimpleFaceReplacement:
             signal_flicker=signal_flicker,
             edge_aware_mask=edge_aware_mask,
             yaw_foreshorten=yaw_foreshorten,
+            profile_boost=profile_boost,
             track_prediction=True,
             fuse_detectors=True,
             small_face_boost=True,

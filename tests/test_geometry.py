@@ -57,6 +57,18 @@ def test_profile_mask_covers_more_than_frontal():
     assert profile.sum() > frontal.sum() * 1.08
 
 
+def test_profile_boost_expands_sides_not_frontal():
+    pose_f = Pose(48, 32, 28, 0, 0.0)
+    pose_p = Pose(48, 32, 28, 0, 1.2)
+    frontal_low = face_region_mask(64, 96, pose_f, scale=1.15, feather_px=0, profile_boost=0.0)
+    frontal_high = face_region_mask(64, 96, pose_f, scale=1.15, feather_px=0, profile_boost=1.0)
+    # Frontal should stay nearly identical regardless of boost.
+    assert abs(float(frontal_high.sum()) - float(frontal_low.sum())) / max(float(frontal_low.sum()), 1.0) < 0.05
+    profile_low = face_region_mask(64, 96, pose_p, scale=1.15, feather_px=0, profile_boost=0.0)
+    profile_high = face_region_mask(64, 96, pose_p, scale=1.15, feather_px=0, profile_boost=1.0)
+    assert profile_high.sum() > profile_low.sum() * 1.05
+
+
 def test_profile_landmarks_inflate_size():
     """Collapsed temple width (profile) should not under-size the face diameter."""
     frontal = landmarks()

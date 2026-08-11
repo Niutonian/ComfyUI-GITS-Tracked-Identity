@@ -201,6 +201,8 @@ Available on Simple, Advanced, and Webcam (`effect_preset`):
 - `signal_flicker` — digital opacity noise when tracking is weak
 - `edge_aware_mask` — grow removal mask along image edges (hair)
 - `yaw_foreshorten` — cheap horizontal squash from estimated head yaw
+- `profile_boost` — extra face-mask / LaMa expansion on **side shots only**
+  (0 = mild auto, 1 = aggressive profile coverage; frontal almost unchanged)
 
 ## Workflows
 

@@ -34,6 +34,7 @@ def render_multi_face_batch(
     edge_aware_mask: float = 0.0,
     yaw_foreshorten: float = 0.0,
     rotation_phase: float = 0.0,
+    profile_boost: float = 0.55,
 ):
     frames = tensor_images_to_numpy(images)
     _, height, width, _ = frames.shape
@@ -64,7 +65,12 @@ def render_multi_face_batch(
             placed = place_overlay_in_frame(artwork, height, width, pose.x, pose.y)
             combined_frame = combine_rgba_layers(placed, combined_frame)
             individual_mask = face_region_mask(
-                height, width, pose, float(removal_area), int(occlusion_feather_px)
+                height,
+                width,
+                pose,
+                float(removal_area),
+                int(occlusion_feather_px),
+                profile_boost=float(profile_boost),
             ) * alpha
             if float(edge_aware_mask) > 0.0:
                 individual_mask = edge_aware_face_mask(frame, individual_mask, float(edge_aware_mask))
