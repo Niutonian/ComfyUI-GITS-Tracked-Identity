@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- **Color-safe LaMa composite:** after Big-LaMa (full-frame or crop), restore
+  original RGB outside the face-remove mask so unmasked pixels keep the input
+  colors. Fixes global tint / “color profile” shifts from AILab’s full-frame
+  rewrite, especially on `single_face` and when `temporal_lama` is off.
+
 ## 0.2.0 — 2026-08-11
 
 All four improvement phases for single-image, video-batch, and live webcam.

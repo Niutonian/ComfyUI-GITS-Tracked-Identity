@@ -120,12 +120,17 @@ def test_integrated_lama_and_final_composite(monkeypatch, tmp_path):
         face_mode="single_face",
     )
 
-    final, removed, overlay, overlay_mask = outputs[0], outputs[1], outputs[3], outputs[4]
+    final, removed, overlay, overlay_mask, face_mask = (
+        outputs[0], outputs[1], outputs[3], outputs[4], outputs[7]
+    )
     assert len(MockLamaRemover.calls) == 1
     assert MockLamaRemover.calls[0][0].shape == (2, 32, 48)
     assert MockLamaRemover.calls[0][1:] == (222, 5)
     assert node._lama_remover.model_path == str(local_lama)
-    assert torch.allclose(removed, torch.full_like(images, 0.25))
+    # Full-frame LaMa output is composited: only the remove-mask keeps the fill.
+    face_alpha = face_mask[..., None]
+    expected_removed = torch.full_like(images, 0.25) * face_alpha + images * (1.0 - face_alpha)
+    assert torch.allclose(removed, expected_removed)
     alpha = overlay_mask[..., None]
     assert torch.allclose(final, overlay * alpha + removed * (1.0 - alpha))
 
@@ -139,6 +144,29 @@ def test_unconnected_artwork_inputs_do_not_block(monkeypatch):
     assert torch.allclose(outputs[0], images)
     assert torch.allclose(outputs[1], images)
     assert torch.count_nonzero(outputs[4]) == 0
+
+
+def test_full_frame_lama_preserves_unmasked_colors(monkeypatch):
+    """Big-LaMa rewrites the whole frame; unmasked pixels must stay original."""
+    monkeypatch.setattr(GITSTrackAndGuide, "tracker_factory", MockTracker)
+    monkeypatch.setattr(GITSTrackAndGuide, "lama_remover_class", MockLamaRemover)
+    MockLamaRemover.calls.clear()
+    images = torch.rand((1, 32, 48, 3))
+    node = GITSTrackAndGuide()
+    _final, removed, *_rest = node.track_and_guide(
+        images,
+        fallback_detector="disabled",
+        face_removal_mode="lama",
+        face_mode="single_face",
+        temporal_lama=False,
+    )
+    face_mask = _rest[-1]
+    alpha = face_mask[..., None]
+    expected = torch.full_like(images, 0.25) * alpha + images * (1.0 - alpha)
+    assert torch.allclose(removed, expected, atol=1e-5)
+    keep = face_mask < 1e-6
+    assert keep.any(), "expected some unmasked pixels for this synthetic face"
+    assert torch.allclose(removed[keep], images[keep], atol=1e-5)
 
 
 def test_no_logos_still_runs_lama_advanced(monkeypatch):

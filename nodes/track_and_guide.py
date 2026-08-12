@@ -262,21 +262,31 @@ class GITSTrackAndGuide:
         return self._lama_remover
 
     def remove_with_lama(self, images, masks, strength=230, edge_smoothness=8):
+        """Run LaMa and restore original colors outside the remove mask.
+
+        AILab Big-LaMa rewrites the *entire* frame (not only the hole). Using that
+        tensor as-is tints/shifts unmasked pixels. Composite back so only the
+        face-remove region keeps the inpaint result.
+        """
+        source = images.to(dtype=torch.float32).clamp(0.0, 1.0)
         remover = self._get_lama_remover()
         results = []
-        progress = _progress_bar(int(images.shape[0]))
+        progress = _progress_bar(int(source.shape[0]))
         chunk_size = 4
-        for start in range(0, int(images.shape[0]), chunk_size):
-            end = min(start + chunk_size, int(images.shape[0]))
+        for start in range(0, int(source.shape[0]), chunk_size):
+            end = min(start + chunk_size, int(source.shape[0]))
             chunk = remover.remove_object(
-                images[start:end], masks[start:end], int(strength), int(edge_smoothness)
+                source[start:end], masks[start:end], int(strength), int(edge_smoothness)
             )[0]
-            results.append(chunk.to(device=images.device, dtype=torch.float32))
-            progress.update_absolute(end, int(images.shape[0]))
+            results.append(chunk.to(device=source.device, dtype=torch.float32))
+            progress.update_absolute(end, int(source.shape[0]))
         result = torch.cat(results, dim=0).clamp(0.0, 1.0)
-        if result.shape != images.shape:
+        if result.shape != source.shape:
             raise ValueError("LaMa remover returned an image batch with an unexpected shape")
-        return result
+        alpha = masks.to(device=source.device, dtype=source.dtype).clamp(0.0, 1.0)
+        if alpha.ndim == 3:
+            alpha = alpha[..., None]
+        return (result * alpha + source * (1.0 - alpha)).clamp(0.0, 1.0)
 
     def _track_and_guide_multi(
         self,

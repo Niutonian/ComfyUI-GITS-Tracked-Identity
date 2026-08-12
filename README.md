@@ -194,6 +194,10 @@ Available on Simple, Advanced, and Webcam (`effect_preset`):
 - `lama_every_n_frames` + optical flow (OpenCV DIS when available, else Farneback)
 - `temporal_blend` cross-fades fresh LaMa with the warped prior (less flash)
 - Webcam: `fast` (blur), `balanced` (interval LaMa), `quality` (every frame)
+- **Color-safe composite:** Big-LaMa rewrites the full frame (or crop). After
+  inpaint, the node blends the result **only under the face-remove mask** and
+  keeps original RGB outside that mask. Unmasked background colors match the
+  input (no global cast from the LaMa provider’s full-frame rewrite).
 
 ### Visual options
 
@@ -239,6 +243,12 @@ MediaPipe is CPU-side. Unchanged logos are converted once per call.
 - **Track loss:** try `aggressive_track`, lower `tracker_confidence`, raise `hold_frames`, keep `small_face_boost` / `fuse_detectors` on
 - **ID swaps:** `locked_face` + appearance matching; avoid extreme motion blur
 - **LaMa flicker:** raise `temporal_blend`, keep `temporal_flow` on, lower interval only if quality allows
+- **Whole image looks recolored / different “color profile”:** fixed in current
+  builds — full-frame LaMa used to return the provider’s rewritten tensor for
+  every pixel. Output now restores original RGB outside the face mask. If you
+  still see a cast only *inside* the face hole, that is LaMa’s inpaint tone
+  (not a global profile change); try a smaller `removal_area` / lower boosts.
+  With `face_removal=disabled`, final must match the input.
 - **Tensor size mismatch (Final Overlay):** match batch/H/W after decode
 
 ## Tests
